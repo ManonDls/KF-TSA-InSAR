@@ -680,7 +680,7 @@ class TimeFct(object):
             if mod[0] in ('POLY','POLYNOMIAL'):
                 k += mod[1]+1
             
-            if mod[0] == 'LISEG':
+            elif mod[0] == 'LISEG':
                 k += len(mod[:1])+1
                     
             elif mod[0] in ('COS','COSINE'):
@@ -724,7 +724,7 @@ class TimeFct(object):
         a  = m[...,indx_cos]
         
         sine_amp  = np.sqrt(a**2 + b**2) 
-        phase_shift = np.arctan(a/b)
+        phase_shift = np.arctan2(a,b)
         m_out[...,indx_sin] = sine_amp
         m_out[...,indx_cos] = phase_shift 
         
@@ -762,20 +762,20 @@ class TimeFct(object):
                 label[k] = 'Offset\n (%s)'%unit
                 k += 1
                 if mod[1] >= 1:
-                    label[k] = 'Velocity\n $(%s/day)$'%unit
+                    label[k] = 'Velocity\n $(%s/year)$'%unit
                     k += 1
                 if mod[1] >= 2:
                     for i in range(2,mod[1]+1):
-                        label[k] = 'Polynomial coef.\n $(mm/day^%d)$'%i
+                        label[k] = 'Polynomial coef.\n $(mm/year^%d)$'%i
                         k += 1
             elif mod[0] == 'LISEG':
                 label[k] =  'Offset\n (%s)'%unit  
                 k +=1
                 for i in range(1,len(mod)):
                     if i < len(mod)-1:
-                        label[k] = "Velocity from {}\n to {} $({}/day)$".format(mod[i],mod[i+1],unit)
+                        label[k] = "Velocity from {}\n to {} $({}/year)$".format(mod[i],mod[i+1],unit)
                     else : 
-                        label[k] = "Velocity from {}\n to {} $({}/day)$".format(mod[i],self.t[-1],unit)
+                        label[k] = "Velocity from {}\n to {} $({}/year)$".format(mod[i],self.t[-1],unit)
                     k += 1
                     
             elif mod[0] in ('COS','COSINE'):

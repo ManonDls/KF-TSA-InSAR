@@ -8,7 +8,6 @@ from __future__ import print_function
 
 from builtins import range
 import numpy as np
-import netCDF4
 import operator
 import scipy.linalg as la
 import scipy.interpolate as sciint
@@ -76,10 +75,11 @@ def plot_param_2D(figname, m, L, xv, yv, bounds=None, names=None, axlim=None, cm
         aratio = (np.max(xv)-np.min(xv))/(np.max(yv)-np.min(yv))
     else :
         aratio = (axlim[1]-axlim[0])/(axlim[3]-axlim[2])
-    scale = 10
+    scale = 5
+    aratio = min(aratio,4)
     
     if L <6:
-        Taillefigure = (aratio*scale*L+1, 1/aratio*scale)
+        Taillefigure = (aratio*scale*L+1, scale)
         fig,ax = plt.subplots(1,L,figsize=Taillefigure,sharex=True,sharey=True) #(L*4,3.5)
     else :
         lcol = L//2+L%2
@@ -121,7 +121,8 @@ def plot_param_2D(figname, m, L, xv, yv, bounds=None, names=None, axlim=None, cm
             img0 = ax[i].pcolormesh(xv,yv,m[:,:,i],norm=colors.LogNorm(vmin=bounds[i][0],vmax=bounds[i][1]),cmap=cm)
             
         cb = fig.colorbar(img0,ax=ax[i],shrink=0.4,aspect=22)
-        ax[i].set_title(param_names[i])
+        ax[i].set_title(param_names[i],fontsize=11)
+        ax[i].set_aspect(1)
         if i == 1:
             cb.set_label('mm/yr')
         else:
@@ -527,6 +528,8 @@ def load_topo_grd(topofile,lon,lat):
     and cut into shape defined in reference lon, lat 
     to save memory and time when plotting'''
     
+    import netCDF4
+
     # Get topography
     topo = netCDF4.Dataset(topofile, 'r')
     print(topo)

@@ -54,6 +54,8 @@ parser.add_argument('-volc', type=str, dest='volc', default=None,
           help='Name and loc of the file containing volcanoe location')
 parser.add_argument('-box', type=float, nargs=4, dest='box', default=None,
           help='Minimum_longitude maximum_longitude minimum_latitude maximum_latitude (no comma)')
+parser.add_argument('-ampshift', type=bool, dest='ampshift', default=False,
+          help='Convert seasonal model of sine+cosine into amplitude & phase shift (True or False)')
 
 args = parser.parse_args()
 
@@ -156,6 +158,11 @@ phases  = fin['rawts']
 ph_std  = fin['rawts_std'] 
 dates   = fin['tims']
 
+#start date in decimal year
+frstdatdt = dt.date.fromordinal(fin['dates'][0])
+frstdat = frstdatdt.year + frstdatdt.timetuple().tm_yday/365
+print("Time series starts the {}/{}/{} equivalent to {}".format(frstdatdt.year, 
+                                            frstdatdt.month, frstdatdt.day, frstdat))
 
 #Lon, lat ready for plotting
 print('2D map shape x',nx,'and y',ny)
@@ -263,16 +270,37 @@ plt.savefig(locfig+'profile.png',dpi=200)
 ## Plot and Save
 print('Start plots')
 
+# Change reference time of descriptive model
+params = mod.shift_t0(frstdat,parms[:])
+dates = dates[:] + frstdat
+
+if args.ampshift : 
+    ampphase,ampphase_err = mod.comp_phase_shift(params, P=prm_std)
+    parm_names
+
 ########## Parameter maps with uncertainties
 cm = plt.get_cmap('RdBu_r').copy()
 cm.set_bad(color='0.8')
 
-mplt.plot_param_2D(os.path.join(locfig, 'outputparamsKF.png'), parms, L, xv, yv, cm=cm, 
-                        names=parm_names, axlim=[minlon,maxlon,minlat,maxlat])
+cmerr = plt.get_cmap('viridis').copy()
+cmerr.set_bad(color='0.8')
 
-cm = plt.get_cmap('viridis').copy()
-cm.set_bad(color='0.8')
-mplt.plot_param_2D(os.path.join(locfig, 'outputstd.png'), errors, L, xv, yv, cm=cm, norm='log', 
+
+if args.ampshift:
+    parm_names = mod.get_label(L,'mm',phase=True)
+    indoy = ((ampphase[:,:,-1]+np.pi/2)*365/(2*np.pi))%365
+    ampphase[:,:,-1] = indoy
+    mplt.plot_param_2D(os.path.join(locfig, 'outputparamsKF.png'), ampphase, L, xv, yv, cm=cm, 
+                        names=parm_names, axlim=[minlon,maxlon,minlat,maxlat],
+                        bounds= [[-10000,10000],[-5,5],[0,5],[0,365]])
+    mplt.plot_param_2D(os.path.join(locfig, 'outputstd.png'), 
+                        np.sqrt(np.diagonal(ampphase_err,axis1=2,axis2=3)), 
+                        L, xv, yv, cm=cmerr, norm='log', 
+                        names=parm_names, axlim=[minlon,maxlon,minlat,maxlat])
+else : 
+    mplt.plot_param_2D(locfig+'outputparamsKF.png', parms, L, xv, yv, cm=cm,
+                        names=parm_names, axlim=[minlon,maxlon,minlat,maxlat])
+    mplt.plot_param_2D(locfig+'outputstd.png', errors, L, xv, yv, cm=cmerr, norm='log',
                         names=parm_names, axlim=[minlon,maxlon,minlat,maxlat])
 
 ########### Plot Time series of selected pixels
@@ -282,15 +310,11 @@ Xpxl= np.random.randint(0,nx-1,size=Npix)
 pixels = [(i,j)for i,j in zip(Ypxl,Xpxl)]
 letter = ['A','B','C','D','E','F']
 
-dates = dates[:]
-mplt.plot_TS(os.path.join(locfig, 'timeseries_randpxls_one.png'), dates, phases, ph_std,
-            pixel=pixels, model=model, params=parms[:], label=letter)
+#mplt.plot_TS(os.path.join(locfig, 'timeseries_randpxls_one.png'), dates, phases, ph_std,
+#            pixel=pixels, model=model, params=parms[:], label=letter)
 
 fig0,ax0 = plt.subplots(1,len(pixels),figsize=(11,2.9),sharex=True,sharey=True)
 ax0 = ax0.ravel()
-
-# Change reference time of descriptive model 
-#params = mod.shift_t0(dates[0],parms[:])
 
 k=0
 for indx in pixels:
@@ -337,7 +361,8 @@ cm.set_bad(color='0.8')
 
 Vmin, Vmax = np.nanpercentile(disp,1), np.nanpercentile(disp,99)
 disp[disp==0]=np.nan
-img0 = ax.pcolormesh(xv,yv,disp,vmin=Vmin,vmax=Vmax,cmap=cm) 
+img0 = ax.pcolormesh(xv,yv,disp,vmin=-25,vmax=25,cmap=cm) 
+ax.set_aspect(1)
 
 plt.plot(xv[Ypxl,Xpxl],yv[Ypxl,Xpxl],'sk',markersize=2)
 
@@ -359,7 +384,7 @@ if VOLC :
             ax.text(lonvolc[i],latvolc[i]+0.01,namevolc[i],
                         fontsize=9,horizontalalignment='center')
 
-plt.colorbar(img0,ax=ax)
+plt.colorbar(img0,ax=ax,shrink=0.7)
 #refframe = np.array([[2855,208],[2057,623],[1367,848],[837,879],[1035,618],[1409,355],
 #                        [1916,0],[119,0],[119,1600],[2300,1600],[2855,1050],[2855,208]]) #y,x
 #plt.plot(refframe[:,1],refframe[:,0],'k--')
