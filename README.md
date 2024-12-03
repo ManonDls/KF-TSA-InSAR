@@ -39,7 +39,7 @@ To quickly visualize outputs and plot metrics :
 ```
 python kf2rms.py -c configs/config_Etna.ini 
 python checkinnov.py -c configs/config_Etna.ini 
-python plotoutput.py -c configs/config_Etna.ini  -geom ./ -rmsTh 2
+python plotoutput.py -c configs/config_Etna.ini  -geom ./ -rmsTh 2 -ampshift True
 ```
 ### Synthetics 
 
